@@ -64,14 +64,14 @@ create_complete_struct!(
         ColorSpace::color_space(&ColorSpaces::Unknown).internal_object(),
     ),
     (
-        fbo.get_ptr(),
+        fbo.as_ptr(),
         flipped as bool,
         color_repr.internal_object(),
         color_space.internal_object(),
     )
 );
 
-get_ptr!(SwapchainFrame, frame, pl_swapchain_frame);
+as_ptr!(SwapchainFrame, frame, pl_swapchain_frame);
 
 pub struct Swapchain {
     sw: *const pl_swapchain,
@@ -80,7 +80,7 @@ pub struct Swapchain {
 impl Swapchain {
     pub fn new(vk: &Vulkan, params: &SwapchainParams) -> Self {
         let sw = unsafe {
-            pl_vulkan_create_swapchain(vk.get_ptr(), &params.sw_params)
+            pl_vulkan_create_swapchain(vk.as_ptr(), &params.sw_params)
         };
         assert!(!sw.is_null());
 

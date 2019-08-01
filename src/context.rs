@@ -75,7 +75,7 @@ impl Context {
         }
     }
 
-    pub(crate) fn get_mut_ptr(&self) -> *mut pl_context {
+    pub(crate) fn as_mut_ptr(&self) -> *mut pl_context {
         self.ctx
     }
 }

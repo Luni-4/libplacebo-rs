@@ -5,7 +5,7 @@ use crate::*;
 use libplacebo_sys::*;
 
 use std::ffi::c_void;
-use std::ptr::null;
+use std::ptr::{null, null_mut};
 
 set_struct!(PlaneData, plane_data, pl_plane_data);
 default_struct!(
@@ -79,7 +79,7 @@ set_params!(
         pixel_stride as usize,
         row_stride as usize,
         pixels.as_ptr() as *const c_void,
-        buf.get_ptr(),
+        buf.as_ptr(),
         buf_offset as usize,
     )
 );
@@ -91,17 +91,32 @@ impl PlaneData {
         }
     }
 
+    pub fn find_fmt(&self, gpu: &Gpu, out_map: Option<&mut [i32; 4]>) -> Fmt {
+        let mut out = null_mut();
+        if let Some(map) = out_map {
+            out = map.as_mut_ptr();
+        }
+        let fmt = unsafe {
+            pl_plane_find_fmt(gpu.as_ptr(), out, &self.plane_data)
+        };
+        Fmt::create_struct(fmt)
+    }
+
     pub fn upload_plane(
         &self,
         gpu: &Gpu,
-        out_plane: &mut Plane,
+        out_plane: Option<&mut Plane>,
         tex: &mut Tex,
     ) {
         let mut tex_i = null();
+        let mut out = null_mut();
+        if let Some(plane) = out_plane {
+            out = plane.as_mut_ptr();
+        }
         let ok = unsafe {
             pl_upload_plane(
-                gpu.get_ptr(),
-                out_plane.get_mut_ptr(),
+                gpu.as_ptr(),
+                out,
                 &mut tex_i,
                 &self.plane_data,
             )

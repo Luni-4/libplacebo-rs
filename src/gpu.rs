@@ -5,6 +5,8 @@ use libplacebo_sys::*;
 
 use std::default::Default;
 use std::ptr::{null, null_mut};
+use std::ffi::CString;
+use std::mem::MaybeUninit;
 
 create_enum!(
     FmtType,
@@ -17,6 +19,22 @@ create_enum!(
         FMT_SINT,
         FMT_FLOAT,
         FMT_TYPE_COUNT,
+    )
+);
+
+create_enum!(
+    FmtCaps,
+    pl_fmt_caps,
+    (
+        FMT_CAP_SAMPLEABLE,
+        FMT_CAP_STORABLE,
+        FMT_CAP_LINEAR,
+        FMT_CAP_RENDERABLE,
+        FMT_CAP_BLENDABLE,
+        FMT_CAP_BLITTABLE,
+        FMT_CAP_VERTEX,
+        FMT_CAP_TEXEL_UNIFORM,
+        FMT_CAP_TEXEL_STORAGE,
     )
 );
 
@@ -41,26 +59,13 @@ simple_enum!(
 
 simple_enum!(BufMemType, (BUF_MEM_AUTO, BUF_MEM_HOST, BUF_MEM_DEVICE));
 
-pub union Handle {
-    handle: pl_handle,
-}
+create_enum!(SampleMode, pl_tex_sample_mode,
+             (TEX_SAMPLE_NEAREST, TEX_SAMPLE_LINEAR)
+);
 
-default_struct!(Handle, handle, pl_handle, (handle), (null_mut()));
-
-set_struct!(SharedMem, shared_mem, pl_shared_mem);
-
-impl Default for SharedMem {
-    fn default() -> Self {
-        let handle: Handle = Default::default();
-        let shared_mem = pl_shared_mem {
-            handle: unsafe { handle.handle },
-            size: 0 as usize,
-            offset: 0 as usize,
-        };
-
-        SharedMem { shared_mem }
-    }
-}
+create_enum!(AddressMode, pl_tex_address_mode,
+             (TEX_ADDRESS_CLAMP, TEX_ADDRESS_REPEAT, TEX_ADDRESS_MIRROR)
+);
 
 #[derive(Clone)]
 pub struct Gpu {
@@ -69,7 +74,7 @@ pub struct Gpu {
 
 impl Gpu {
     pub fn new(vk: &Vulkan) -> Self {
-        let gpu = unsafe { (*vk.get_ptr()).gpu };
+        let gpu = unsafe { (*vk.as_ptr()).gpu };
         Gpu { gpu }
     }
 
@@ -91,8 +96,44 @@ impl Gpu {
         }
     }
 
-    pub(crate) fn get_ptr(&self) -> *const pl_gpu {
+    pub(crate) fn as_ptr(&self) -> *const pl_gpu {
         self.gpu
+    }
+}
+
+pub struct Fmt {
+    fmt: *const pl_fmt,
+}
+
+impl Fmt {
+    pub fn find_fmt(gpu: &Gpu, type_: FmtType, num_components: usize, min_depth: usize, host_bits: usize, caps: FmtCaps) -> Self {
+        let fmt = unsafe {
+            pl_find_fmt(gpu.gpu, FmtType::to_pl_fmt_type(&type_), num_components as i32, min_depth as i32, host_bits as i32, FmtCaps::to_pl_fmt_caps(&caps))
+        };
+        Fmt { fmt }
+    }
+
+    pub fn find_vertex_fmt(gpu: &Gpu, type_: FmtType, num_components: usize) -> Self {
+        let fmt = unsafe {
+            pl_find_vertex_fmt(gpu.gpu, FmtType::to_pl_fmt_type(&type_), num_components as i32)
+        };
+        Fmt { fmt }
+    }
+
+    pub fn find_named_fmt(gpu: &Gpu, name: &str) -> Self {
+        let source = CString::new(name).unwrap();
+        let fmt = unsafe {
+            pl_find_named_fmt(gpu.gpu, source.as_ptr())
+        };
+        Fmt { fmt }
+    }
+
+    pub fn is_ordered(&self) -> bool {
+        unsafe { pl_fmt_is_ordered(self.fmt) }
+    }
+
+    pub(crate) fn create_struct(fmt: *const pl_fmt) -> Self {
+        Fmt { fmt }
     }
 }
 
@@ -133,7 +174,7 @@ impl Buf {
         Buf { buf, gpu: gpu.gpu }
     }
 
-    pub(crate) fn get_ptr(&self) -> *const pl_buf {
+    pub(crate) fn as_ptr(&self) -> *const pl_buf {
         self.buf
     }
 }
@@ -147,41 +188,57 @@ impl Drop for Buf {
 }
 
 set_struct!(TexParams, tex_params, pl_tex_params);
+
 impl Default for TexParams {
     fn default() -> Self {
-        let shared_mem: SharedMem = Default::default();
-        #[cfg(target_os = "windows")]
-        let import_handle = pl_handle_type::PL_HANDLE_WIN32;
-        #[cfg(target_os = "windows")]
-        let export_handle = pl_handle_type::PL_HANDLE_WIN32;
-        #[cfg(target_os = "linux")]
-        let import_handle = pl_handle_type::PL_HANDLE_FD;
-        #[cfg(target_os = "linux")]
-        let export_handle = pl_handle_type::PL_HANDLE_FD;
-
-        let tex_params = pl_tex_params {
-            w: 0,
-            h: 0,
-            d: 0,
-            format: null(),
-            sampleable: false,
-            renderable: false,
-            storable: false,
-            blit_src: false,
-            blit_dst: false,
-            host_writable: false,
-            host_readable: false,
-            sample_mode: pl_tex_sample_mode::PL_TEX_SAMPLE_NEAREST,
-            address_mode: pl_tex_address_mode::PL_TEX_ADDRESS_CLAMP,
-            export_handle,
-            import_handle,
-            shared_mem: shared_mem.shared_mem,
-            initial_data: null(),
-            user_data: null_mut(),
-        };
+        let tex_params_u: MaybeUninit<pl_tex_params> = MaybeUninit::uninit();
+        // FIXME This is an horrible hack that should be fixed in some way eventually
+        let tex_params = unsafe { tex_params_u.assume_init() };
         TexParams { tex_params }
     }
 }
+
+set_params!(TexParams, tex_params,
+            (
+                w, h, d,
+                format,
+                sampleable,
+                renderable,
+                storable,
+                blit_src,
+                blit_dst,
+                host_writable,
+                host_readable,
+                sample_mode,
+                address_mode,
+            ),
+            (
+                usize, usize, usize,
+                &Fmt,
+                bool,
+                bool,
+                bool,
+                bool,
+                bool,
+                bool,
+                bool,
+                &SampleMode,
+                &AddressMode,
+            ),
+            (
+                w as i32, h as i32, d as i32,
+                format.fmt,
+                sampleable as bool,
+                renderable as bool,
+                storable as bool,
+                blit_src as bool,
+                blit_dst as bool,
+                host_writable as bool,
+                host_readable as bool,
+                SampleMode::to_pl_tex_sample_mode(sample_mode),
+                AddressMode::to_pl_tex_address_mode(address_mode),
+            )
+);
 
 pub struct Tex {
     tex: *const pl_tex,
@@ -203,17 +260,15 @@ impl Tex {
         Tex { tex, gpu: gpu.gpu }
     }
 
-    /*
-     TODO We need to test these ones because surely they hide some memory errors
+    pub fn tex_recreate(&mut self, params: &TexParams) -> bool {
+        unsafe { pl_tex_recreate(self.gpu, &mut self.tex, &params.tex_params) }
+    }
 
-     pub fn tex_recreate(&mut self, params: &TexParams) -> bool {
-        unsafe { pl_tex_recreate(self.gpu.gpu, &mut self.tex, &params.tex_params) }
-    }*/
+    pub fn tex_invalidate(&mut self) {
+        unsafe { pl_tex_invalidate(self.gpu, self.tex) };
+    }
 
-    /*pub fn tex_invalidate(&mut self) {
-        unsafe { pl_tex_invalidate(self.gpu.gpu, self.tex) };
-    }*/
-
+    // TODO We need to test these ones because surely they hide some memory errors
     /*pub fn tex_clear(&mut self, color: &f32) {
         unsafe { pl_tex_clear(self.gpu.gpu, self.tex, color) };
     }*/
@@ -243,7 +298,7 @@ impl Tex {
         unsafe { pl_tex_export(self.gpu.gpu, self.tex, sync.sync) }
     } */
 
-    pub(crate) fn get_ptr(&self) -> *const pl_tex {
+    pub(crate) fn as_ptr(&self) -> *const pl_tex {
         self.tex
     }
 

@@ -169,10 +169,10 @@ macro_rules! create_complete_struct {
 }
 
 #[macro_export]
-macro_rules! get_ptr {
+macro_rules! as_ptr {
     ($struct:tt, $param:tt, $type:ty) => {
         impl $struct {
-            pub(crate) fn get_ptr(&self) -> *const $type {
+            pub(crate) fn as_ptr(&self) -> *const $type {
                 &self.$param as *const $type
             }
         }

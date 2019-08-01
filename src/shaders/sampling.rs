@@ -20,4 +20,4 @@ default_struct!(DebandParams, deband_params, unsafe {
     pl_deband_default_params
 });
 
-get_ptr!(DebandParams, deband_params, pl_deband_params);
+as_ptr!(DebandParams, deband_params, pl_deband_params);

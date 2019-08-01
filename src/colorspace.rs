@@ -287,7 +287,7 @@ default_struct!(ColorAdjustment, color_adjustment, unsafe {
     pl_color_adjustment_neutral
 });
 
-get_ptr!(ColorAdjustment, color_adjustment, pl_color_adjustment);
+as_ptr!(ColorAdjustment, color_adjustment, pl_color_adjustment);
 
 pub struct IccProfile {
     icc_profile: pl_icc_profile,

@@ -171,7 +171,7 @@ create_complete_struct!(
     )
 );
 
-get_ptr!(FilterConfig, filter_config, pl_filter_config);
+as_ptr!(FilterConfig, filter_config, pl_filter_config);
 
 impl FilterConfig {
     pub fn get_filter_config(filter: &FilterConfigs) -> Self {
@@ -244,7 +244,7 @@ pub struct Filter {
 impl Filter {
     pub fn new(ctx: &mut Context, params: &FilterParams) -> Self {
         let filter = unsafe {
-            pl_filter_generate(ctx.get_mut_ptr(), &params.filter_params)
+            pl_filter_generate(ctx.as_mut_ptr(), &params.filter_params)
         };
         assert!(!filter.is_null());
         Filter { filter }

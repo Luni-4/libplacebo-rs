@@ -85,7 +85,7 @@ pub struct VulkanInstance {
 impl VulkanInstance {
     pub fn new(ctx: &Context, params: &VulkanInstanceParams) -> Self {
         let inst = unsafe {
-            pl_vk_inst_create(ctx.get_mut_ptr(), &params.vk_inst_params)
+            pl_vk_inst_create(ctx.as_mut_ptr(), &params.vk_inst_params)
         };
         assert!(!inst.is_null());
 
@@ -175,7 +175,7 @@ pub struct Vulkan {
 impl Vulkan {
     pub fn new(ctx: &Context, params: &VulkanParams) -> Self {
         let vk =
-            unsafe { pl_vulkan_create(ctx.get_mut_ptr(), &params.vk_params) };
+            unsafe { pl_vulkan_create(ctx.as_mut_ptr(), &params.vk_params) };
         assert!(!vk.is_null());
 
         Vulkan { vk }
@@ -185,7 +185,7 @@ impl Vulkan {
         Gpu::new(self)
     }
 
-    pub(crate) fn get_ptr(&self) -> *const pl_vulkan {
+    pub(crate) fn as_ptr(&self) -> *const pl_vulkan {
         self.vk
     }
 }

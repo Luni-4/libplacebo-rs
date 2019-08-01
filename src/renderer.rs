@@ -36,7 +36,7 @@ create_complete_struct!(
     (&Tex, usize, [i32; 4], f32, f32),
     (null(), 0, [0; 4], 0.0, 0.0),
     (
-        texture.get_ptr(),
+        texture.as_ptr(),
         components as i32,
         component_mapping as [i32; 4],
         shift_x as f32,
@@ -52,7 +52,7 @@ impl Plane {
     pub fn height(&self) -> usize {
         unsafe { (*self.plane.texture).params.h as usize }
     }
-    pub(crate) fn get_mut_ptr(&mut self) -> *mut pl_plane {
+    pub(crate) fn as_mut_ptr(&mut self) -> *mut pl_plane {
         &mut self.plane
     }
 }
@@ -197,7 +197,7 @@ set_params!(
     (fbo, dst_rect, repr, color, profile),
     (&Tex, &Rect2D, &ColorRepr, &ColorSpace, &IccProfile),
     (
-        fbo.get_ptr(),
+        fbo.as_ptr(),
         dst_rect.internal_object(),
         repr.internal_object(),
         color.internal_object(),
@@ -208,7 +208,7 @@ set_params!(
 impl RenderTarget {
     pub fn render_target_from_swapchain(&mut self, frame: &SwapchainFrame) {
         unsafe {
-            pl_render_target_from_swapchain(&mut self.target, frame.get_ptr());
+            pl_render_target_from_swapchain(&mut self.target, frame.as_ptr());
         }
     }
 
@@ -269,18 +269,18 @@ set_params!(
         bool,
     ),
     (
-        upscaler.get_ptr(),
-        downscaler.get_ptr(),
+        upscaler.as_ptr(),
+        downscaler.as_ptr(),
         lut_entries as i32,
         antiringing_strength as f32,
-        frame_mixer.get_ptr(),
-        deband_params.get_ptr(),
-        sigmoid_params.get_ptr(),
-        color_adjustment.get_ptr(),
-        peak_detect_params.get_ptr(),
-        color_map_params.get_ptr(),
-        dither_params.get_ptr(),
-        lut3d_params.get_ptr(),
+        frame_mixer.as_ptr(),
+        deband_params.as_ptr(),
+        sigmoid_params.as_ptr(),
+        color_adjustment.as_ptr(),
+        peak_detect_params.as_ptr(),
+        color_map_params.as_ptr(),
+        dither_params.as_ptr(),
+        lut3d_params.as_ptr(),
         &Vision::to_cone_params(cone_params),
         skip_anti_aliasing as bool,
         polar_cutoff as f32,
@@ -300,7 +300,7 @@ pub struct Renderer {
 impl Renderer {
     pub fn new(ctx: &Context, gpu: &Gpu) -> Self {
         let rr =
-            unsafe { pl_renderer_create(ctx.get_mut_ptr(), gpu.get_ptr()) };
+            unsafe { pl_renderer_create(ctx.as_mut_ptr(), gpu.as_ptr()) };
         assert!(!rr.is_null());
 
         Renderer { rr }

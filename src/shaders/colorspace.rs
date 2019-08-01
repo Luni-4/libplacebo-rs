@@ -40,7 +40,7 @@ default_struct!(SigmoidParams, sigmoid_params, unsafe {
     pl_sigmoid_default_params
 });
 
-get_ptr!(SigmoidParams, sigmoid_params, pl_sigmoid_params);
+as_ptr!(SigmoidParams, sigmoid_params, pl_sigmoid_params);
 
 create_struct!(
     PeakDetectParams,
@@ -59,7 +59,7 @@ default_struct!(PeakDetectParams, detect_params, unsafe {
     pl_peak_detect_default_params
 });
 
-get_ptr!(PeakDetectParams, detect_params, pl_peak_detect_params);
+as_ptr!(PeakDetectParams, detect_params, pl_peak_detect_params);
 
 set_struct!(ColorMapParams, colormap_params, pl_color_map_params);
 
@@ -102,7 +102,7 @@ set_params!(
     )
 );
 
-get_ptr!(ColorMapParams, colormap_params, pl_color_map_params);
+as_ptr!(ColorMapParams, colormap_params, pl_color_map_params);
 
 create_struct!(
     DitherParams,
@@ -121,7 +121,7 @@ default_struct!(DitherParams, dither_params, unsafe {
     pl_dither_default_params
 });
 
-get_ptr!(DitherParams, dither_params, pl_dither_params);
+as_ptr!(DitherParams, dither_params, pl_dither_params);
 
 create_struct!(
     Lut3DParams,
@@ -141,4 +141,4 @@ default_struct!(Lut3DParams, lut3d_params, unsafe {
     pl_3dlut_default_params
 });
 
-get_ptr!(Lut3DParams, lut3d_params, pl_3dlut_params);
+as_ptr!(Lut3DParams, lut3d_params, pl_3dlut_params);

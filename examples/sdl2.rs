@@ -144,7 +144,7 @@ fn upload_plane(
     plane_data.data_from_mask(&mut masks);
 
     let gpu = vk.gpu();
-    plane_data.upload_plane(&gpu, plane, img_tex);
+    plane_data.upload_plane(&gpu, Some(plane), img_tex);
 
     Ok(())
 }
@@ -234,6 +234,8 @@ fn main() -> std::io::Result<()> {
     let (_vk_inst, mut vk, swapchain) = init_vulkan(&mut window, &mut ctx);
 
     let gpu = vk.gpu();
+    //let tex_params: TexParams = Default::default();
+    //let mut img_tex = Tex::new(&gpu, &tex_params);
     let mut img_tex = Tex::default(&gpu);
     let mut osd_tex = Tex::default(&gpu);
 
